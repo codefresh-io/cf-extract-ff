@@ -60,7 +60,7 @@ async function getFFconfigForAccounts() {
     }
 
     if (errors.length) {
-        const filename = './report.json';
+        const filename = './errors.json';
         writeFileSync(filename, JSON.stringify(errors));
         console.log(`written errors to file "${filename}"!`);
     }
