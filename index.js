@@ -1,9 +1,14 @@
+const _ = require('lodash');
 const Promise = require('bluebird');
 const { writeFileSync } = require('fs');
 const { MongoClient } = require('mongodb');
+const { parse } = require('json2csv');
+
+const fields = ['name'];
 
 let accounts = null;
 let featuresPerAccount = [];
+
 
 async function initMongoClients() {
     console.log('Connecting to db...');
@@ -25,8 +30,13 @@ async function getFFconfigForAccounts() {
         try {
            const accountFeatures = {
                name: curAccount.name,
-               features: curAccount.features
            }
+           _.forEach(curAccount.features, (value, key)=>{
+               _.set(accountFeatures, key, value);
+               if (fields.indexOf(key) === -1) {
+                   fields.push(key)
+               }
+           })
             featuresPerAccount.push(accountFeatures)
             counter+=1;
         } catch (err) {
@@ -41,9 +51,12 @@ async function getFFconfigForAccounts() {
     console.log(`finished! ${counter} accounts`);
     console.log(`had ${errors.length} errors!`)
 
+    const opts = { fields };
+
     if (featuresPerAccount) {
-        const filename = './report.json';
-        writeFileSync(filename, JSON.stringify(featuresPerAccount));
+        const filename = './report.csv';
+        const csv = parse(featuresPerAccount, opts);
+        writeFileSync(filename, csv);
     }
 
     if (errors.length) {
