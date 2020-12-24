@@ -1,0 +1,13 @@
+{
+  "name": "cf-extract-ff",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:codefresh-io/cf-extract-ff.git",
+  "author": "ziv-codefresh <ziv@codefresh.io>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "bluebird": "^3.7.2",
+    "mongodb": "^3.6.3"
+  }
+}
