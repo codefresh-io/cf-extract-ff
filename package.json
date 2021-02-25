@@ -8,7 +8,7 @@
   "private": false,
   "dependencies": {
     "bluebird": "^3.7.2",
-    "json2csv": "^5.0.5",
+    "json2csv": "^5.0.6",
     "lodash": "^4.17.20",
     "mongodb": "^3.6.3"
   }
