@@ -1,79 +1,73 @@
-const _ = require('lodash');
-const Promise = require('bluebird');
-const { writeFileSync } = require('fs');
-const { MongoClient } = require('mongodb');
-const { parse } = require('json2csv');
+import { writeFile } from 'node:fs/promises';
+import { MongoClient } from 'mongodb';
+import { Parser } from '@json2csv/plainjs';
 
-const fields = ['name'];
+const fields = new Set(['name']);
 
-let accounts = null;
-let featuresPerAccount = [];
+console.log('Connecting to db...');
+const apiClient = await MongoClient.connect(process.env.MONGO_URI);
 
+const accounts = apiClient.db().collection('accounts');
+console.log('Connected to db.');
 
-async function initMongoClients() {
-    console.log('Connecting to db...');
-    const [apiClient] = await Promise.all([
-        MongoClient.connect(process.env.MONGO_URI, { promiseLibrary: Promise, useNewUrlParser: true, useUnifiedTopology: true  }),
-    ]);
-
-    accounts = apiClient.db().collection('accounts');
-    console.log('Connected to db.');
-}
 
 async function getFFconfigForAccounts() {
+    const featuresPerAccount = [];
     const errors = [];
-    const accountsCursor = accounts.find().project({ _id: 1, name: 1, features: 1 });
+    const accountsCursor = accounts
+        .find()
+        .project({ _id: 1, name: 1, features: 1 });
     let curAccount;
     let counter = 0;
 
     while ((curAccount = await accountsCursor.next())) {
         try {
-           const accountFeatures = {
-               name: curAccount.name,
-           }
-           _.forEach(curAccount.features, (value, key)=>{
-               _.set(accountFeatures, key, value);
-               if (fields.indexOf(key) === -1) {
-                   fields.push(key)
-               }
-           })
-            featuresPerAccount.push(accountFeatures)
-            counter+=1;
+            const accountFeatures = {
+                name: curAccount.name,
+            };
+            curAccount.features &&
+                Object.entries(curAccount.features).forEach(([key, value]) => {
+                    accountFeatures[key] = value;
+                    fields.add(key);
+                });
+            featuresPerAccount.push(accountFeatures);
+            counter += 1;
         } catch (err) {
-            console.error(`failed to get account "${curAccount.name}": ${JSON.stringify(err)}`);
+            console.error(
+                `failed to get account "${curAccount.name}": ${JSON.stringify(err)}`
+            );
             errors.push({
                 account: { id: curAccount._id.toString(), name: curAccount.name },
-                cause: err
+                cause: err,
             });
         }
     }
 
     console.log(`finished! ${counter} accounts`);
-    console.log(`had ${errors.length} errors!`)
+    console.log(`had ${errors.length} errors!`);
 
-    const opts = { fields };
+    const opts = { fields: [...fields.values()] };
 
-    if (featuresPerAccount) {
+    if (featuresPerAccount.length) {
         const filename = './report.csv';
-        const csv = parse(featuresPerAccount, opts);
-        writeFileSync(filename, csv);
+        const parser = new Parser(opts);
+        const csv = parser.parse(featuresPerAccount);
+        await writeFile(filename, csv);
     }
 
     if (errors.length) {
         const filename = './errors.json';
-        writeFileSync(filename, JSON.stringify(errors));
+        await writeFile(filename, JSON.stringify(errors));
         console.log(`written errors to file "${filename}"!`);
     }
 }
 
-async function run() {
-    await initMongoClients();
+try {
     await getFFconfigForAccounts();
-    process.exit(0);
+} catch (error) {
+    console.error(err);
+    process.exit(1);
+} finally {
+    console.log('Closing db connection...');
+    await apiClient.close();
 }
-
-run()
-    .catch((err) => {
-        console.error(err);
-        process.exit(1);
-    });

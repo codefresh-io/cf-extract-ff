@@ -6,10 +6,9 @@
   "author": "ziv-codefresh <ziv@codefresh.io>",
   "license": "MIT",
   "private": false,
+  "type": "module",
   "dependencies": {
-    "bluebird": "^3.7.2",
-    "json2csv": "^5.0.5",
-    "lodash": "^4.17.21",
-    "mongodb": "^3.6.3"
+    "@json2csv/plainjs": "^7.0.5",
+    "mongodb": "^6.3.0"
   }
 }
