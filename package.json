@@ -8,7 +8,7 @@
   "private": false,
   "type": "module",
   "dependencies": {
-    "@json2csv/plainjs": "^7.0.5",
+    "@json2csv/plainjs": "^7.0.6",
     "mongodb": "^6.3.0"
   }
 }
